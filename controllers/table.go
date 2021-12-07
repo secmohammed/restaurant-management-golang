@@ -1,14 +1,18 @@
 package controllers
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/secmohammed/restaurant-management/services"
+	"github.com/secmohammed/restaurant-management/utils"
 )
 
 type tableController struct {
 	s services.TableService
+	v *validator.Validate
 }
 
 type TableController interface {
@@ -19,8 +23,8 @@ type TableController interface {
 	GetTables(c *gin.Context)
 }
 
-func NewTableController(o services.TableService) TableController {
-	return &tableController{o}
+func NewTableController(o services.TableService, v *validator.Validate) TableController {
+	return &tableController{o, v}
 }
 
 func (o *tableController) CreateTable(c *gin.Context) {
@@ -45,15 +49,25 @@ func (o *tableController) DeleteTable(c *gin.Context) {
 	o.s.DeleteTable(id)
 }
 
-func (o *tableController) GetTable(c *gin.Context) {
+func (t *tableController) GetTable(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid id"})
 		return
 	}
-	o.s.GetTable(id)
+	invoice, err := t.s.GetTable(id)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, invoice)
 }
 
-func (o *tableController) GetTables(c *gin.Context) {
-	o.s.GetTables()
+func (t *tableController) GetTables(c *gin.Context) {
+	results, err := t.s.GetTables()
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, results)
 }

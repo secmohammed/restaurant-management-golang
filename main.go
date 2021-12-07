@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-playground/validator/v10"
 	"github.com/secmohammed/restaurant-management/database"
 
 	"github.com/secmohammed/restaurant-management/container"
@@ -15,8 +16,10 @@ import (
 func main() {
 	c := config.NewConfig()
 	db := database.NewDatabaseConnection(c)
+	validate := validator.New()
+
 	// db := db.NewDB(c.DB)
-	app := container.New(c, db)
+	app := container.New(c, db, validate)
 	r := routes.NewRouter(app)
 	r.RegisterFoodRoutes()
 	r.RegisterOrderRoutes()

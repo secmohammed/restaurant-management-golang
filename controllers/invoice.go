@@ -1,14 +1,18 @@
 package controllers
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/secmohammed/restaurant-management/services"
+	"github.com/secmohammed/restaurant-management/utils"
 )
 
 type invoiceController struct {
 	s services.InvoiceService
+	v *validator.Validate
 }
 
 type InvoiceController interface {
@@ -19,8 +23,8 @@ type InvoiceController interface {
 	GetInvoices(c *gin.Context)
 }
 
-func NewInvoiceController(o services.InvoiceService) InvoiceController {
-	return &invoiceController{o}
+func NewInvoiceController(o services.InvoiceService, v *validator.Validate) InvoiceController {
+	return &invoiceController{o, v}
 }
 
 func (o *invoiceController) CreateInvoice(c *gin.Context) {
@@ -45,15 +49,25 @@ func (o *invoiceController) DeleteInvoice(c *gin.Context) {
 	o.s.DeleteInvoice(id)
 }
 
-func (o *invoiceController) GetInvoice(c *gin.Context) {
+func (i *invoiceController) GetInvoice(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid id"})
 		return
 	}
-	o.s.GetInvoice(id)
+	invoice, err := i.s.GetInvoice(id)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, invoice)
 }
 
-func (o *invoiceController) GetInvoices(c *gin.Context) {
-	o.s.GetInvoices()
+func (i *invoiceController) GetInvoices(c *gin.Context) {
+	results, err := i.s.GetInvoices()
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, results)
 }

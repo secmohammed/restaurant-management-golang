@@ -1,6 +1,12 @@
 package utils
 
-import "github.com/siruspen/logrus"
+import (
+	"errors"
+	"net/http"
+
+	"github.com/siruspen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 type ApiError struct {
 	Status  int    `json:"status"`
@@ -13,5 +19,14 @@ func CreateApiError(status int, err error) (int, *ApiError) {
 	return status, &ApiError{
 		Status:  status,
 		Message: message,
+	}
+}
+
+func ErrorFromDatabase(err error) (int, *ApiError) {
+	switch err {
+	case mongo.ErrNoDocuments:
+		return CreateApiError(http.StatusNotFound, errors.New("document not found"))
+	default:
+		return CreateApiError(http.StatusInternalServerError, err)
 	}
 }

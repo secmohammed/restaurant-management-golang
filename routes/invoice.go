@@ -7,7 +7,7 @@ import (
 
 func (r *router) RegisterInvoiceRoutes() {
 	s := services.NewInvoiceService(r.app)
-	c := controllers.NewInvoiceController(s)
+	c := controllers.NewInvoiceController(s, r.app.Validator)
 	r.GET("/api/invoices/:id", c.GetInvoice)
 	r.POST("/api/invoices", c.CreateInvoice)
 	r.GET("/api/invoices", c.GetInvoices)

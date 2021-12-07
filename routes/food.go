@@ -7,7 +7,7 @@ import (
 
 func (r *router) RegisterFoodRoutes() {
 	s := services.NewFoodService(r.app)
-	c := controllers.NewFoodController(s)
+	c := controllers.NewFoodController(s, r.app.Validator)
 	r.GET("/api/foods/:id", c.GetFood)
 	r.POST("/api/foods", c.CreateFood)
 	r.GET("/api/foods", c.GetFoods)

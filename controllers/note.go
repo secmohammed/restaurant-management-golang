@@ -1,14 +1,18 @@
 package controllers
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/secmohammed/restaurant-management/services"
+	"github.com/secmohammed/restaurant-management/utils"
 )
 
 type noteController struct {
 	s services.NoteService
+	v *validator.Validate
 }
 
 type NoteController interface {
@@ -19,8 +23,8 @@ type NoteController interface {
 	GetNotes(c *gin.Context)
 }
 
-func NewNoteController(o services.NoteService) NoteController {
-	return &noteController{o}
+func NewNoteController(n services.NoteService, v *validator.Validate) NoteController {
+	return &noteController{n, v}
 }
 
 func (o *noteController) CreateNote(c *gin.Context) {
@@ -45,15 +49,25 @@ func (o *noteController) DeleteNote(c *gin.Context) {
 	o.s.DeleteNote(id)
 }
 
-func (o *noteController) GetNote(c *gin.Context) {
+func (n *noteController) GetNote(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid id"})
 		return
 	}
-	o.s.GetNote(id)
+	note, err := n.s.GetNote(id)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	c.JSON(http.StatusOK, note)
 }
 
-func (o *noteController) GetNotes(c *gin.Context) {
-	o.s.GetNotes()
+func (n *noteController) GetNotes(c *gin.Context) {
+	results, err := n.s.GetNotes()
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	c.JSON(http.StatusOK, results)
 }

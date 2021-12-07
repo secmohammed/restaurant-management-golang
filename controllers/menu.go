@@ -1,14 +1,21 @@
 package controllers
 
 import (
+	"errors"
+	"net/http"
 	"strconv"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/secmohammed/restaurant-management/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/secmohammed/restaurant-management/services"
+	"github.com/secmohammed/restaurant-management/utils"
 )
 
 type menuController struct {
 	s services.MenuService
+	v *validator.Validate
 }
 
 type MenuController interface {
@@ -19,41 +26,82 @@ type MenuController interface {
 	GetMenus(c *gin.Context)
 }
 
-func NewMenuController(o services.MenuService) MenuController {
-	return &menuController{o}
+func NewMenuController(o services.MenuService, v *validator.Validate) MenuController {
+	return &menuController{o, v}
 }
 
-func (o *menuController) CreateMenu(c *gin.Context) {
-	o.s.CreateMenu()
-}
-
-func (o *menuController) UpdateMenu(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid id"})
+func (m *menuController) CreateMenu(c *gin.Context) {
+	menu := models.Menu{}
+	if err := c.ShouldBindJSON(&menu); err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, errors.New("invalid request body")))
 		return
 	}
-	o.s.UpdateMenu(id)
+	err := m.v.Struct(menu)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	result, err := m.s.CreateMenu(menu)
+	if err != nil {
+		c.JSON(utils.ErrorFromDatabase(err))
+		return
+	}
+	c.JSON(http.StatusCreated, result)
+}
+
+func (m *menuController) UpdateMenu(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	menu := models.Menu{}
+	if err := c.ShouldBindJSON(&menu); err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, errors.New("invalid request body")))
+		return
+	}
+	err = m.v.Struct(menu)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+
+	result, err := m.s.UpdateMenu(id, menu)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (o *menuController) DeleteMenu(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid id"})
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
 		return
 	}
 	o.s.DeleteMenu(id)
 }
 
-func (o *menuController) GetMenu(c *gin.Context) {
+func (m *menuController) GetMenu(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid id"})
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
 		return
 	}
-	o.s.GetMenu(id)
+	menu, err := m.s.GetMenu(id)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, menu)
 }
 
 func (o *menuController) GetMenus(c *gin.Context) {
-	o.s.GetMenus()
+	results, err := o.s.GetMenus()
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, results)
 }

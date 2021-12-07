@@ -7,7 +7,7 @@ import (
 
 func (r *router) RegisterTableRoutes() {
 	s := services.NewTableService(r.app)
-	c := controllers.NewTableController(s)
+	c := controllers.NewTableController(s, r.app.Validator)
 	r.GET("/api/tables/:id", c.GetTable)
 	r.POST("/api/tables", c.CreateTable)
 	r.GET("/api/tables", c.GetTables)

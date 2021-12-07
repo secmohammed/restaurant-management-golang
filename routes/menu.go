@@ -7,7 +7,7 @@ import (
 
 func (r *router) RegisterMenuRoutes() {
 	s := services.NewMenuService(r.app)
-	c := controllers.NewMenuController(s)
+	c := controllers.NewMenuController(s, r.app.Validator)
 	r.GET("/api/menus/:id", c.GetMenu)
 	r.POST("/api/menus", c.CreateMenu)
 	r.GET("/api/menus", c.GetMenus)

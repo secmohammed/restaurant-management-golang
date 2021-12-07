@@ -7,7 +7,7 @@ import (
 
 func (r *router) RegisterOrderItemRoutes() {
 	s := services.NewOrderItemService(r.app)
-	c := controllers.NewOrderItemController(s)
+	c := controllers.NewOrderItemController(s, r.app.Validator)
 	r.GET("/api/order_items/:id", c.GetOrderItem)
 	r.POST("/api/order_items", c.CreateOrderItem)
 	r.GET("/api/order_items", c.GetOrderItems)

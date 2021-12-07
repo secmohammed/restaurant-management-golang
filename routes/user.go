@@ -7,7 +7,7 @@ import (
 
 func (r *router) RegisterUserRoutes() {
 	s := services.NewUserService(r.app)
-	c := controllers.NewUserController(s)
+	c := controllers.NewUserController(s, r.app.Validator)
 	r.GET("/api/users/:id", c.GetUser)
 	r.POST("/api/users", c.CreateUser)
 	r.GET("/api/users", c.GetUsers)

@@ -1,14 +1,18 @@
 package controllers
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/secmohammed/restaurant-management/services"
+	"github.com/secmohammed/restaurant-management/utils"
 )
 
 type userController struct {
 	s services.UserService
+	v *validator.Validate
 }
 
 type UserController interface {
@@ -19,8 +23,8 @@ type UserController interface {
 	GetUsers(c *gin.Context)
 }
 
-func NewUserController(o services.UserService) UserController {
-	return &userController{o}
+func NewUserController(o services.UserService, v *validator.Validate) UserController {
+	return &userController{o, v}
 }
 
 func (o *userController) CreateUser(c *gin.Context) {
@@ -45,15 +49,25 @@ func (o *userController) DeleteUser(c *gin.Context) {
 	o.s.DeleteUser(id)
 }
 
-func (o *userController) GetUser(c *gin.Context) {
+func (u *userController) GetUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Invalid id"})
 		return
 	}
-	o.s.GetUser(id)
+	invoice, err := u.s.GetUser(id)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, invoice)
 }
 
-func (o *userController) GetUsers(c *gin.Context) {
-	o.s.GetUsers()
+func (u *userController) GetUsers(c *gin.Context) {
+	results, err := u.s.GetUsers()
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusNotFound, err))
+		return
+	}
+	c.JSON(http.StatusOK, results)
 }
