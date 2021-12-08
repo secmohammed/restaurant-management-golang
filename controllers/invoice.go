@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/secmohammed/restaurant-management/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -27,17 +30,48 @@ func NewInvoiceController(o services.InvoiceService, v *validator.Validate) Invo
 	return &invoiceController{o, v}
 }
 
-func (o *invoiceController) CreateInvoice(c *gin.Context) {
-	o.s.CreateInvoice()
-}
-
-func (o *invoiceController) UpdateInvoice(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid id"})
+func (i *invoiceController) CreateInvoice(c *gin.Context) {
+	invoice := models.Invoice{}
+	if err := c.ShouldBindJSON(&invoice); err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, errors.New("invalid request body")))
 		return
 	}
-	o.s.UpdateInvoice(id)
+	err := i.v.Struct(invoice)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	result, err := i.s.CreateInvoice(invoice)
+	if err != nil {
+		c.JSON(utils.ErrorFromDatabase(err))
+		return
+	}
+	c.JSON(http.StatusCreated, result)
+}
+
+func (i *invoiceController) UpdateInvoice(c *gin.Context) {
+	invoice := models.Invoice{}
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	if err := c.ShouldBindJSON(&invoice); err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, errors.New("invalid request body")))
+		return
+	}
+	err = i.v.Struct(invoice)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+
+	result, err := i.s.UpdateInvoice(id, invoice)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (o *invoiceController) DeleteInvoice(c *gin.Context) {

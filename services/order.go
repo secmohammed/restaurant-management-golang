@@ -59,6 +59,14 @@ func (o *orderService) GetOrders() ([]bson.M, error) {
 func (o *orderService) CreateOrder(order models.Order) (*mongo.InsertOneResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
+	table := models.Table{}
+
+	if order.TableID != nil {
+		err := o.app.Database.OpenCollection("table").FindOne(ctx, bson.M{"table_id": *order.TableID}).Decode(&table)
+		if err != nil {
+			return nil, errors.New("table not found")
+		}
+	}
 	order.CreatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	order.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	order.ID = primitive.NewObjectID()

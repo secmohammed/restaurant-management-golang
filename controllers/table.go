@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/secmohammed/restaurant-management/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -27,17 +30,48 @@ func NewTableController(o services.TableService, v *validator.Validate) TableCon
 	return &tableController{o, v}
 }
 
-func (o *tableController) CreateTable(c *gin.Context) {
-	o.s.CreateTable()
-}
-
-func (o *tableController) UpdateTable(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid id"})
+func (t *tableController) CreateTable(c *gin.Context) {
+	table := models.Table{}
+	if err := c.ShouldBindJSON(&table); err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, errors.New("invalid request body")))
 		return
 	}
-	o.s.UpdateTable(id)
+	err := t.v.Struct(table)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	result, err := t.s.CreateTable(table)
+	if err != nil {
+		c.JSON(utils.ErrorFromDatabase(err))
+		return
+	}
+	c.JSON(http.StatusCreated, result)
+}
+
+func (t *tableController) UpdateTable(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	table := models.Table{}
+	if err := c.ShouldBindJSON(&table); err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, errors.New("invalid request body")))
+		return
+	}
+	err = t.v.Struct(table)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+
+	result, err := t.s.UpdateTable(id, table)
+	if err != nil {
+		c.JSON(utils.CreateApiError(http.StatusBadRequest, err))
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (o *tableController) DeleteTable(c *gin.Context) {
